@@ -85,6 +85,7 @@ var types = map[string]string{
 	".au":        "audio/basic",
 	".avi":       "video/x-msvideo",
 	".avs":       "video/avs-video",
+	".ts":        "video/MP2T",
 	".bcpio":     "application/x-bcpio",
 	".bin":       "application/mac-binary",
 	".bmp":       "image/bmp",
