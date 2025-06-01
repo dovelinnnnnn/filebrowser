@@ -3,27 +3,13 @@
     <header-bar showMenu showLogo>
       <title />
 
-      <action
-        v-if="fileStore.selectedCount"
-        icon="file_download"
-        :label="t('buttons.download')"
-        @action="download"
-        :counter="fileStore.selectedCount"
-      />
-      <button
-        v-if="isSingleFile()"
-        class="action copy-clipboard"
-        :aria-label="t('buttons.copyDownloadLinkToClipboard')"
-        :data-title="t('buttons.copyDownloadLinkToClipboard')"
-        @click="copyToClipboard(linkSelected())"
-      >
+      <action v-if="fileStore.selectedCount" icon="file_download" :label="t('buttons.download')" @action="download"
+        :counter="fileStore.selectedCount" />
+      <button v-if="isSingleFile()" class="action copy-clipboard" :aria-label="t('buttons.copyDownloadLinkToClipboard')"
+        :data-title="t('buttons.copyDownloadLinkToClipboard')" @click="copyToClipboard(linkSelected())">
         <i class="material-icons">content_paste</i>
       </button>
-      <action
-        icon="check_circle"
-        :label="t('buttons.selectMultiple')"
-        @action="toggleMultipleSelection"
-      />
+      <action icon="check_circle" :label="t('buttons.selectMultiple')" @action="toggleMultipleSelection" />
     </header-bar>
 
     <breadcrumbs :base="'/share/' + hash" />
@@ -49,22 +35,12 @@
           </div>
 
           <div class="card-content">
-            <input
-              v-focus
-              class="input input--block"
-              type="password"
-              :placeholder="t('login.password')"
-              v-model="password"
-              @keyup.enter="fetchData"
-            />
+            <input v-focus class="input input--block" type="password" :placeholder="t('login.password')"
+              v-model="password" @keyup.enter="fetchData" />
           </div>
           <div class="card-action">
-            <button
-              class="button button--flat"
-              @click="fetchData"
-              :aria-label="t('buttons.submit')"
-              :data-title="t('buttons.submit')"
-            >
+            <button class="button button--flat" @click="fetchData" :aria-label="t('buttons.submit')"
+              :data-title="t('buttons.submit')">
               {{ t("buttons.submit") }}
             </button>
           </div>
@@ -75,26 +51,20 @@
     </div>
     <div v-else-if="req !== null">
       <div class="share">
-        <div
-          class="share__box share__box__info"
-          style="
+        <div class="share__box share__box__info" style="
             position: -webkit-sticky;
             position: sticky;
             top: -20.6em;
             z-index: 999;
-          "
-        >
+          ">
           <div class="share__box__header" style="height: 3em">
             {{
-              req.isDir
-                ? t("download.downloadFolder")
-                : t("download.downloadFile")
-            }}
+        req.isDir
+          ? t("download.downloadFolder")
+          : t("download.downloadFile")
+      }}
           </div>
-          <div
-            v-if="!req.isDir"
-            class="share__box__element share__box__center share__box__icon"
-          >
+          <div v-if="!req.isDir" class="share__box__element share__box__center share__box__icon">
             <i class="material-icons">{{ icon }}</i>
           </div>
           <div class="share__box__element" style="height: 3em">
@@ -107,185 +77,95 @@
             <strong>{{ $t("prompts.size") }}:</strong> {{ humanSize }}
           </div>
           <div class="share__box__element share__box__center">
-            <a
-              target="_blank"
-              :href="link"
-              class="button button--flat"
-              style="height: 4em"
-            >
+            <a target="_blank" :href="link" class="button button--flat" style="height: 4em">
               <div>
-                <i class="material-icons">file_download</i
-                >{{ t("buttons.download") }}
+                <i class="material-icons">file_download</i>{{ t("buttons.download") }}
               </div>
             </a>
-            <a
-              target="_blank"
-              :href="inlineLink"
-              class="button button--flat"
-              v-if="!req.isDir"
-            >
+            <a target="_blank" :href="inlineLink" class="button button--flat" v-if="!req.isDir">
               <div>
-                <i class="material-icons">open_in_new</i
-                >{{ t("buttons.openFile") }}
+                <i class="material-icons">open_in_new</i>{{ t("buttons.openFile") }}
               </div>
             </a>
-            <qrcode-vue
-              v-if="req.isDir"
-              :value="link"
-              :size="100"
-              level="M"
-            ></qrcode-vue>
+            <qrcode-vue v-if="req.isDir" :value="link" :size="100" level="M"></qrcode-vue>
           </div>
           <div v-if="!req.isDir" class="share__box__element share__box__center">
             <qrcode-vue :value="link" :size="200" level="M"></qrcode-vue>
           </div>
-          <div
-            v-if="req.isDir"
-            class="share__box__element share__box__header"
-            style="height: 3em"
-          >
+          <div v-if="req.isDir" class="share__box__element share__box__header" style="height: 3em">
             {{ $t("sidebar.preview") }}
           </div>
-          <div
-            v-if="req.isDir"
-            class="share__box__element share__box__center share__box__icon"
-            style="padding: 0em !important; height: 12em !important"
-          >
-            <a
-              target="_blank"
-              :href="raw"
-              class="button button--flat"
-              v-if="
-                !fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'image'
-              "
-              style="height: 12em; padding: 0; margin: 0"
-            >
+          <div v-if="req.isDir" class="share__box__element share__box__center share__box__icon"
+            style="padding: 0em !important; height: 12em !important">
+            <a target="_blank" :href="raw" class="button button--flat" v-if="!fileStore.multiple &&
+        fileStore.selectedCount === 1 &&
+        req.items[fileStore.selected[0]].type === 'image'
+        " style="height: 12em; padding: 0; margin: 0">
               <img style="height: 12em" :src="raw" />
             </a>
-            <div
-              v-else-if="
-                fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'audio'
-              "
-              style="height: 12em; padding-top: 1em; margin: 0"
-            >
-              <button
-                @click="play"
-                v-if="!tag"
-                style="
+            <div v-else-if="fileStore.multiple &&
+        fileStore.selectedCount === 1 &&
+        req.items[fileStore.selected[0]].type === 'audio'
+        " style="height: 12em; padding-top: 1em; margin: 0">
+              <button @click="play" v-if="!tag" style="
                   font-size: 6em !important;
                   border: 0px;
                   outline: none;
                   background: white;
-                "
-                class="material-icons"
-              >
+                " class="material-icons">
                 play_circle_filled
               </button>
-              <button
-                @click="play"
-                v-if="tag"
-                style="
+              <button @click="play" v-if="tag" style="
                   font-size: 6em !important;
                   border: 0px;
                   outline: none;
                   background: white;
-                "
-                class="material-icons"
-              >
+                " class="material-icons">
                 pause_circle_filled
               </button>
-              <audio
-                id="myaudio"
-                ref="audio"
-                :src="raw"
-                controls
-                :autoplay="tag"
-              ></audio>
+              <audio id="myaudio" ref="audio" :src="raw" controls :autoplay="tag"></audio>
             </div>
-            <video
-              v-else-if="
-                !fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'video'
-              "
-              style="height: 12em; padding: 0; margin: 0"
-              :src="raw"
-              controls
-            >
+            <video v-else-if="!fileStore.multiple &&
+        fileStore.selectedCount === 1 &&
+        req.items[fileStore.selected[0]].type === 'video'
+        " style="height: 12em; padding: 0; margin: 0" :src="raw" controls>
               Sorry, your browser doesn't support embedded videos, but don't
               worry, you can <a :href="raw">download it</a>
               and watch it with your favorite video player!
             </video>
-            <i
-              v-else-if="
-                !fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].isDir
-              "
-              class="material-icons"
-              >folder
+            <i v-else-if="!fileStore.multiple &&
+        fileStore.selectedCount === 1 &&
+        req.items[fileStore.selected[0]].isDir
+        " class="material-icons">folder
             </i>
             <i v-else class="material-icons">call_to_action</i>
           </div>
         </div>
-        <div
-          id="shareList"
-          v-if="req.isDir && req.items.length > 0"
-          class="share__box share__box__items"
-        >
+        <div id="shareList" v-if="req.isDir && req.items.length > 0" class="share__box share__box__items">
           <div class="share__box__header" v-if="req.isDir">
             {{ t("files.files") }}
           </div>
           <div id="listing" class="list file-icons">
-            <item
-              v-for="item in req.items.slice(0, showLimit)"
-              :key="base64(item.name)"
-              v-bind:index="item.index"
-              v-bind:name="item.name"
-              v-bind:isDir="item.isDir"
-              v-bind:url="item.url"
-              v-bind:modified="item.modified"
-              v-bind:type="item.type"
-              v-bind:size="item.size"
-              readOnly
-            >
+            <item v-for="item in req.items.slice(0, showLimit)" :key="base64(item.name)" v-bind:index="item.index"
+              v-bind:name="item.name" v-bind:isDir="item.isDir" v-bind:url="item.url" v-bind:modified="item.modified"
+              v-bind:type="item.type" v-bind:size="item.size" readOnly>
             </item>
-            <div
-              v-if="req.items.length > showLimit"
-              class="item"
-              @click="showLimit += 100"
-            >
+            <div v-if="req.items.length > showLimit" class="item" @click="showLimit += 100">
               <div>
                 <p class="name">+ {{ req.items.length - showLimit }}</p>
               </div>
             </div>
 
-            <div
-              :class="{ active: fileStore.multiple }"
-              id="multiple-selection"
-            >
+            <div :class="{ active: fileStore.multiple }" id="multiple-selection">
               <p>{{ t("files.multipleSelectionEnabled") }}</p>
-              <div
-                @click="() => (fileStore.multiple = false)"
-                tabindex="0"
-                role="button"
-                :data-title="t('buttons.clear')"
-                :aria-label="t('buttons.clear')"
-                class="action"
-              >
+              <div @click="() => (fileStore.multiple = false)" tabindex="0" role="button"
+                :data-title="t('buttons.clear')" :aria-label="t('buttons.clear')" class="action">
                 <i class="material-icons">clear</i>
               </div>
             </div>
           </div>
         </div>
-        <div
-          v-else-if="req.isDir && req.items.length === 0"
-          class="share__box share__box__items"
-        >
+        <div v-else-if="req.isDir && req.items.length === 0" class="share__box share__box__items">
           <h2 class="message">
             <i class="material-icons">sentiment_dissatisfied</i>
             <span>{{ t("files.lonely") }}</span>
@@ -356,11 +236,11 @@ const link = computed(() => (req.value ? api.getDownloadURL(req.value) : ""));
 const raw = computed(() => {
   return req.value
     ? req.value.items[fileStore.selected[0]].url.replace(
-        /share/,
-        "api/public/dl"
-      ) +
-        "?token=" +
-        token.value
+      /share/,
+      "api/public/dl"
+    ) +
+    "?token=" +
+    token.value
     : "";
 });
 const inlineLink = computed(() =>
@@ -481,10 +361,10 @@ const download = () => {
 const linkSelected = () => {
   return isSingleFile() && req.value
     ? api.getDownloadURL({
-        ...req.value,
-        hash: hash.value,
-        path: req.value.items[fileStore.selected[0]].path,
-      })
+      ...req.value,
+      hash: hash.value,
+      path: req.value.items[fileStore.selected[0]].path,
+    })
     : "";
 };
 

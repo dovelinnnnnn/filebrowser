@@ -1,14 +1,8 @@
 <template>
   <video ref="videoPlayer" class="video-max video-js" controls preload="auto">
     <source />
-    <track
-      kind="subtitles"
-      v-for="(sub, index) in subtitles"
-      :key="index"
-      :src="sub"
-      :label="subLabel(sub)"
-      :default="index === 0"
-    />
+    <track kind="subtitles" v-for="(sub, index) in subtitles" :key="index" :src="sub" :label="subLabel(sub)"
+      :default="index === 0" />
     <p class="vjs-no-js">
       Sorry, your browser doesn't support embedded videos, but don't worry, you
       can <a :href="source">download it</a>
@@ -47,7 +41,7 @@ nextTick(() => {
   initVideoPlayer();
 });
 
-onMounted(() => {});
+onMounted(() => { });
 
 onBeforeUnmount(() => {
   if (player.value) {
@@ -79,7 +73,7 @@ const initVideoPlayer = async () => {
       srcOpt,
       playbackRatesOpt
     );
-    player.value = videojs(videoPlayer.value!, options, () => {});
+    player.value = videojs(videoPlayer.value!, options, () => { });
 
     // TODO: need to test on mobile
     // @ts-expect-error no ts definition for mobileUi
@@ -94,8 +88,17 @@ const getOptions = (...srcOpt: any[]) => {
     controlBar: {
       skipButtons: {
         forward: 5,
-        backward: 5,
+        backward: 5
       },
+      CurrentTimeDisplay: true,
+      TimeDivider: true,
+      ProgressControl: {
+        SeekBar: {
+          LoadProgressBar: true,
+          MouseTimeDisplay: true,
+          PlayProgressBar: true
+        }
+      }
     },
     html5: {
       nativeTextTracks: false,

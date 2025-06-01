@@ -7,73 +7,55 @@
     <template v-if="listing">
       <div class="card-content">
         <table>
-          <tr>
-            <th>#</th>
-            <th>{{ $t("settings.shareDuration") }}</th>
-            <th></th>
-            <th></th>
-          </tr>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>{{ $t("settings.shareDuration") }}</th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
 
-          <tr v-for="link in links" :key="link.hash">
-            <td>{{ link.hash }}</td>
-            <td>
-              <template v-if="link.expire !== 0">{{
-                humanTime(link.expire)
-              }}</template>
-              <template v-else>{{ $t("permanent") }}</template>
-            </td>
-            <td class="small">
-              <button
-                class="action copy-clipboard"
-                :aria-label="$t('buttons.copyToClipboard')"
-                :title="$t('buttons.copyToClipboard')"
-                @click="copyToClipboard(buildLink(link))"
-              >
-                <i class="material-icons">content_paste</i>
-              </button>
-            </td>
-            <td class="small" v-if="hasDownloadLink()">
-              <button
-                class="action copy-clipboard"
-                :aria-label="$t('buttons.copyDownloadLinkToClipboard')"
-                :title="$t('buttons.copyDownloadLinkToClipboard')"
-                @click="copyToClipboard(buildDownloadLink(link))"
-              >
-                <i class="material-icons">content_paste_go</i>
-              </button>
-            </td>
-            <td class="small">
-              <button
-                class="action"
-                @click="deleteLink($event, link)"
-                :aria-label="$t('buttons.delete')"
-                :title="$t('buttons.delete')"
-              >
-                <i class="material-icons">delete</i>
-              </button>
-            </td>
-          </tr>
+          <tbody>
+            <tr v-for="link in links" :key="link.hash">
+              <td>{{ link.hash }}</td>
+              <td>
+                <template v-if="link.expire !== 0">{{
+        humanTime(link.expire)
+      }}</template>
+                <template v-else>{{ $t("permanent") }}</template>
+              </td>
+              <td class="small">
+                <button class="action copy-clipboard" :aria-label="$t('buttons.copyToClipboard')"
+                  :title="$t('buttons.copyToClipboard')" @click="copyToClipboard(buildLink(link))">
+                  <i class="material-icons">content_paste</i>
+                </button>
+              </td>
+              <td class="small" v-if="hasDownloadLink()">
+                <button class="action copy-clipboard" :aria-label="$t('buttons.copyDownloadLinkToClipboard')"
+                  :title="$t('buttons.copyDownloadLinkToClipboard')" @click="copyToClipboard(buildDownloadLink(link))">
+                  <i class="material-icons">content_paste_go</i>
+                </button>
+              </td>
+              <td class="small">
+                <button class="action" @click="deleteLink($event, link)" :aria-label="$t('buttons.delete')"
+                  :title="$t('buttons.delete')">
+                  <i class="material-icons">delete</i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+
         </table>
       </div>
 
       <div class="card-action">
-        <button
-          class="button button--flat button--grey"
-          @click="closeHovers"
-          :aria-label="$t('buttons.close')"
-          :title="$t('buttons.close')"
-          tabindex="2"
-        >
+        <button class="button button--flat button--grey" @click="closeHovers" :aria-label="$t('buttons.close')"
+          :title="$t('buttons.close')" tabindex="2">
           {{ $t("buttons.close") }}
         </button>
-        <button
-          id="focus-prompt"
-          class="button button--flat button--blue"
-          @click="() => switchListing()"
-          :aria-label="$t('buttons.new')"
-          :title="$t('buttons.new')"
-          tabindex="1"
-        >
+        <button id="focus-prompt" class="button button--flat button--blue" @click="() => switchListing()"
+          :aria-label="$t('buttons.new')" :title="$t('buttons.new')" tabindex="1">
           {{ $t("buttons.new") }}
         </button>
       </div>
@@ -83,22 +65,9 @@
       <div class="card-content">
         <p>{{ $t("settings.shareDuration") }}</p>
         <div class="input-group input">
-          <vue-number-input
-            center
-            controls
-            size="small"
-            :max="2147483647"
-            :min="0"
-            @keyup.enter="submit"
-            v-model="time"
-            tabindex="1"
-          />
-          <select
-            class="right"
-            v-model="unit"
-            :aria-label="$t('time.unit')"
-            tabindex="2"
-          >
+          <vue-number-input center controls size="small" :max="2147483647" :min="0" @keyup.enter="submit" v-model="time"
+            tabindex="1" />
+          <select class="right" v-model="unit" :aria-label="$t('time.unit')" tabindex="2">
             <option value="seconds">{{ $t("time.seconds") }}</option>
             <option value="minutes">{{ $t("time.minutes") }}</option>
             <option value="hours">{{ $t("time.hours") }}</option>
@@ -106,32 +75,16 @@
           </select>
         </div>
         <p>{{ $t("prompts.optionalPassword") }}</p>
-        <input
-          class="input input--block"
-          type="password"
-          v-model.trim="password"
-          tabindex="3"
-        />
+        <input class="input input--block" type="password" v-model.trim="password" tabindex="3" />
       </div>
 
       <div class="card-action">
-        <button
-          class="button button--flat button--grey"
-          @click="() => switchListing()"
-          :aria-label="$t('buttons.cancel')"
-          :title="$t('buttons.cancel')"
-          tabindex="5"
-        >
+        <button class="button button--flat button--grey" @click="() => switchListing()"
+          :aria-label="$t('buttons.cancel')" :title="$t('buttons.cancel')" tabindex="5">
           {{ $t("buttons.cancel") }}
         </button>
-        <button
-          id="focus-prompt"
-          class="button button--flat button--blue"
-          @click="submit"
-          :aria-label="$t('buttons.share')"
-          :title="$t('buttons.share')"
-          tabindex="4"
-        >
+        <button id="focus-prompt" class="button button--flat button--blue" @click="submit"
+          :aria-label="$t('buttons.share')" :title="$t('buttons.share')" tabindex="4">
           {{ $t("buttons.share") }}
         </button>
       </div>
