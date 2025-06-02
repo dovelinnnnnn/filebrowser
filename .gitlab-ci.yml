@@ -17,6 +17,7 @@ lint-frontend:
     - npm install -g pnpm@$PNPM_VERSION
     - pnpm install
   script:
+    - cd ..
     - make lint-frontend
   cache:
     key: frontend-node-modules
