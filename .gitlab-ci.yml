@@ -5,9 +5,9 @@ stages:
   - validation
   - maintenance
 variables:
-  NODE_VERSION: "22.x"
+  NODE_VERSION: "22"
   GO_VERSION: "1.23.0"
-  PNPM_VERSION: "8.x"
+  PNPM_VERSION: "9"
 # Linters
 lint-frontend:
   stage: lint
