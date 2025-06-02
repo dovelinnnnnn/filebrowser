@@ -60,9 +60,9 @@ release:
   services:
     - docker:dind
   variables:
-    DOCKER_HOST: tcp://docker:2376
+    DOCKER_HOST: https://repo.dovelin.cn
     DOCKER_TLS_VERIFY: "1"
-    DOCKER_CERT_PATH: "/certs"
+    # DOCKER_CERT_PATH: "/certs"
   before_script:
     - apk add --no-cache docker-compose nodejs go pnpm
     - docker buildx create --use
