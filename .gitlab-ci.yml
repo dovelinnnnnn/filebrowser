@@ -1,0 +1,220 @@
+stages:
+  - lint
+  - test
+  - release
+  - validation
+  - maintenance
+variables:
+  NODE_VERSION: "22.x"
+  GO_VERSION: "1.23.0"
+  PNPM_VERSION: "8.x"
+# Linters
+lint-frontend:
+  stage: lint
+  image: node:$NODE_VERSION
+  before_script:
+    - cd frontend
+    - npm install -g pnpm@$PNPM_VERSION
+    - pnpm install
+  script:
+    - make lint-frontend
+  cache:
+    key: frontend-node-modules
+    paths:
+      - frontend/node_modules/
+
+lint-backend:
+  stage: lint
+  image: golang:$GO_VERSION
+  script:
+    - make lint-backend
+
+# Tests
+test-frontend:
+  stage: test
+  image: node:$NODE_VERSION
+  before_script:
+    - cd frontend
+    - npm install -g pnpm@$PNPM_VERSION
+    - pnpm install
+  script:
+    - make test-frontend
+  cache:
+    key: frontend-node-modules
+    paths:
+      - frontend/node_modules/
+    policy: pull
+
+test-backend:
+  stage: test
+  image: golang:$GO_VERSION
+  script:
+    - make test-backend
+
+# Release
+release:
+  stage: release
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "/certs"
+  before_script:
+    - apk add --no-cache docker-compose nodejs go pnpm
+    - docker buildx create --use
+  script:
+    - cd frontend && pnpm install && cd ..
+    - make build-frontend
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - curl -sL https://git.io/goreleaser | bash -s -- release --clean
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  dependencies:
+    - test-frontend
+    - test-backend
+
+validate_mr_title:
+  stage: validation
+  image: node:18
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
+  before_script:
+    - apt-get update && apt-get install -y curl jq git
+    - npm install -g @commitlint/cli @commitlint/config-conventional
+  script:
+    - |
+      # Get merge request title
+      MR_TITLE=$(curl --header "PRIVATE-TOKEN: $API_TOKEN" \
+        "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID" | jq -r '.title')
+
+      # Validate title format
+      if ! echo "$MR_TITLE" | npx commitlint --config=@commitlint/config-conventional; then
+        ERROR_MSG="MR title does not follow Conventional Commits specification. Please use format: <type>(<scope>): <subject>"
+        
+        # Check for existing comments
+        COMMENTS=$(curl --header "PRIVATE-TOKEN: $API_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes")
+        
+        # Delete old error comments
+        echo "$COMMENTS" | jq -r '.[] | select(.body | contains("pr-title-lint-error")) | .id' | while read id; do
+          curl --request DELETE --header "PRIVATE-TOKEN: $API_TOKEN" \
+            "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes/$id"
+        done
+        
+        # Add new comment
+        curl --request POST \
+          --header "PRIVATE-TOKEN: $API_TOKEN" \
+          --header "Content-Type: application/json" \
+          --data "{\"body\": \"Hey there and thank you for opening this merge request! 👋🏼\n\nWe require MR titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/).\n\n**Details:**\n\n$ERROR_MSG\"}" \
+          "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+        
+        exit 1
+      else
+        # Delete any existing error comments if validation passes
+        COMMENTS=$(curl --header "PRIVATE-TOKEN: $API_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes")
+        
+        echo "$COMMENTS" | jq -r '.[] | select(.body | contains("pr-title-lint-error")) | .id' | while read id; do
+          curl --request DELETE --header "PRIVATE-TOKEN: $API_TOKEN" \
+            "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes/$id"
+        done
+      fi
+# .gitlab-ci.yml
+
+stale_issues_mrs:
+  stage: maintenance
+  image: python:3.9-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: always
+  before_script:
+    - apt-get update && apt-get install -y curl jq
+    - pip install python-gitlab
+  script:
+    - |
+      # Configuration (matches your GitHub Actions settings)
+      STALE_DAYS=30
+      CLOSE_DAYS=5
+      OPERATIONS_LIMIT=100
+      STALE_PR_MESSAGE="This MR is stale because it has been open 30 days with no activity. Remove stale label or comment or this will be closed in 5 days."
+      CLOSE_PR_MESSAGE="This MR was closed because it has been stalled for 5 days with no activity."
+      STALE_ISSUE_MESSAGE="This issue is stale because it has been open 30 days with no activity. Remove stale label or comment or this will be closed in 5 days."
+      CLOSE_ISSUE_MESSAGE="This issue was closed because it has been stalled for 5 days with no activity."
+      EXEMPT_ISSUE_LABELS="feature ☘,enhancement ⚙,bug 🐞"
+      EXEMPT_PR_LABELS="need-help,wip"
+
+      # Initialize GitLab client
+      gitlab_url="https://gitlab.com"
+      if [ -n "$CI_SERVER_URL" ]; then
+        gitlab_url="$CI_SERVER_URL"
+      fi
+
+      # Process stale issues
+      python3 << EOF
+      import gitlab
+      import datetime
+      from datetime import timezone
+
+      gl = gitlab.Gitlab("$gitlab_url", private_token="$API_TOKEN")
+      project = gl.projects.get("$CI_PROJECT_ID")
+      operations_count = 0
+
+      # Process issues
+      for issue in project.issues.list(all=True, state='opened'):
+          if operations_count >= $OPERATIONS_LIMIT:
+              break
+              
+          if any(label in "$EXEMPT_ISSUE_LABELS".split(',') for label in issue.labels):
+              continue
+
+          last_activity = datetime.datetime.strptime(issue.updated_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+          days_inactive = (datetime.datetime.now(timezone.utc) - last_activity).days
+
+          if days_inactive >= $STALE_DAYS and "stale" not in issue.labels:
+              print(f"Marking issue #{issue.iid} as stale")
+              notes = issue.notes.list()
+              if not any(n.body == "$STALE_ISSUE_MESSAGE" for n in notes):
+                  issue.notes.create({"body": "$STALE_ISSUE_MESSAGE"})
+                  operations_count += 1
+              issue.labels.append("stale")
+              issue.save()
+              operations_count += 1
+          elif days_inactive >= ($STALE_DAYS + $CLOSE_DAYS) and "stale" in issue.labels:
+              print(f"Closing stale issue #{issue.iid}")
+              issue.notes.create({"body": "$CLOSE_ISSUE_MESSAGE"})
+              operations_count += 1
+              issue.state_event = "close"
+              issue.save()
+              operations_count += 1
+
+      # Process merge requests
+      for mr in project.mergerequests.list(all=True, state='opened'):
+          if operations_count >= $OPERATIONS_LIMIT:
+              break
+              
+          if any(label in "$EXEMPT_PR_LABELS".split(',') for label in mr.labels):
+              continue
+
+          last_activity = datetime.datetime.strptime(mr.updated_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+          days_inactive = (datetime.datetime.now(timezone.utc) - last_activity).days
+
+          if days_inactive >= $STALE_DAYS and "stale" not in mr.labels:
+              print(f"Marking MR !{mr.iid} as stale")
+              notes = mr.notes.list()
+              if not any(n.body == "$STALE_PR_MESSAGE" for n in notes):
+                  mr.notes.create({"body": "$STALE_PR_MESSAGE"})
+                  operations_count += 1
+              mr.labels.append("stale")
+              mr.save()
+              operations_count += 1
+          elif days_inactive >= ($STALE_DAYS + $CLOSE_DAYS) and "stale" in mr.labels:
+              print(f"Closing stale MR !{mr.iid}")
+              mr.notes.create({"body": "$CLOSE_PR_MESSAGE"})
+              operations_count += 1
+              mr.state_event = "close"
+              mr.save()
+              operations_count += 1
+      EOF
