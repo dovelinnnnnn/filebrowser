@@ -39,6 +39,7 @@ test-frontend:
     - npm install -g pnpm@$PNPM_VERSION
     - pnpm install
   script:
+    - cd ..
     - make test-frontend
   cache:
     key: frontend-node-modules
