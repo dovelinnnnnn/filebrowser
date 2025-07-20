@@ -46,6 +46,35 @@
             </tr>
           </tbody>
 
+          <tr v-for="link in links" :key="link.hash">
+            <td>{{ link.hash }}</td>
+            <td>
+              <template v-if="link.expire !== 0">{{
+                humanTime(link.expire)
+              }}</template>
+              <template v-else>{{ $t("permanent") }}</template>
+            </td>
+            <td class="small">
+              <button
+                class="action copy-clipboard"
+                :aria-label="$t('buttons.copyToClipboard')"
+                :title="$t('buttons.copyToClipboard')"
+                @click="copyToClipboard(buildLink(link))"
+              >
+                <i class="material-icons">content_paste</i>
+              </button>
+            </td>
+            <td class="small">
+              <button
+                class="action"
+                @click="deleteLink($event, link)"
+                :aria-label="$t('buttons.delete')"
+                :title="$t('buttons.delete')"
+              >
+                <i class="material-icons">delete</i>
+              </button>
+            </td>
+          </tr>
         </table>
       </div>
 
@@ -95,7 +124,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 import { useFileStore } from "@/stores/file";
-import { share as api, pub as pub_api } from "@/api";
+import { share as api } from "@/api";
 import dayjs from "dayjs";
 import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
@@ -209,14 +238,6 @@ export default {
     },
     buildLink(share) {
       return api.getShareURL(share);
-    },
-    hasDownloadLink() {
-      return (
-        this.selected.length === 1 && !this.req.items[this.selected[0]].isDir
-      );
-    },
-    buildDownloadLink(share) {
-      return pub_api.getDownloadURL(share);
     },
     sort() {
       this.links = this.links.sort((a, b) => {

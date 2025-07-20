@@ -5,7 +5,12 @@
     </div>
 
     <div class="card-content">
-      <file-list ref="fileList" @update:selected="(val) => (dest = val)" tabindex="1" />
+      <file-list
+        ref="fileList"
+        @update:selected="(val) => (dest = val)"
+        :exclude="excludedFolders"
+        tabindex="1"
+      />
     </div>
 
     <div class="card-action" style="display: flex; align-items: center; justify-content: space-between">
@@ -52,6 +57,11 @@ export default {
   computed: {
     ...mapState(useFileStore, ["req", "selected"]),
     ...mapState(useAuthStore, ["user"]),
+    excludedFolders() {
+      return this.selected
+        .filter((idx) => this.req.items[idx].isDir)
+        .map((idx) => this.req.items[idx].url);
+    },
   },
   methods: {
     ...mapActions(useLayoutStore, ["showHover", "closeHovers"]),
